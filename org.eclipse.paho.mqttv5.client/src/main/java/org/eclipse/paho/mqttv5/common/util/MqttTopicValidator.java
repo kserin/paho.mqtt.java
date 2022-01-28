@@ -31,6 +31,8 @@ public class MqttTopicValidator {
    */
   public static final String TOPIC_WILDCARDS = MULTI_LEVEL_WILDCARD + SINGLE_LEVEL_WILDCARD;
 
+  public static final String TOPIC_SHARED_PREFIX = "$share/";
+
   // topic name and topic filter length range defined in the spec
   private static final int MIN_TOPIC_LEN = 1;
   private static final int MAX_TOPIC_LEN = 65535;
@@ -151,6 +153,11 @@ public class MqttTopicValidator {
   public static boolean isMatched(String topicFilter, String topicName) throws IllegalArgumentException {
     int topicPos = 0;
     int filterPos = 0;
+    // remove $share/groupname from $share/groupname/topic to topic
+    if (topicFilter.startsWith(TOPIC_SHARED_PREFIX)) {
+        topicFilter = topicFilter.substring(topicFilter.indexOf("/", topicFilter.indexOf("/") + 1) + 1);
+    }
+
     int topicLen = topicName.length();
     int filterLen = topicFilter.length();
 
@@ -170,17 +177,22 @@ public class MqttTopicValidator {
         filterPos = filterLen;
         break;
       }
-      if (topicName.charAt(topicPos) == '/' && topicFilter.charAt(filterPos) != '/')
+      if (topicName.charAt(topicPos) == '/' && topicFilter.charAt(filterPos) != '/') {
         break;
+    }
       if (topicFilter.charAt(filterPos) != '+' && topicFilter.charAt(filterPos) != '#'
-          && topicFilter.charAt(filterPos) != topicName.charAt(topicPos))
+          && topicFilter.charAt(filterPos) != topicName.charAt(topicPos)) {
         break;
+    }
       if (topicFilter.charAt(filterPos) == '+') { // skip until we meet the next separator, or end of string
         int nextpos = topicPos + 1;
-        while (nextpos < topicLen && topicName.charAt(nextpos) != '/')
-          nextpos = ++topicPos + 1;
+        while (nextpos < topicLen && topicName.charAt(nextpos) != '/') {
+            nextpos = ++topicPos + 1;
+        }
       } else if (topicFilter.charAt(filterPos) == '#')
+     {
         topicPos = topicLen - 1; // skip until end of string
+    }
       filterPos++;
       topicPos++;
     }
@@ -192,8 +204,9 @@ public class MqttTopicValidator {
        * https://github.com/eclipse/paho.mqtt.java/issues/418 Covers edge case to match sport/# to sport
        */
       if ((topicFilter.length() - filterPos > 0) && (topicPos == topicLen)) {
-        if (topicName.charAt(topicPos - 1) == '/' && topicFilter.charAt(filterPos) == '#')
-          return true;
+        if (topicName.charAt(topicPos - 1) == '/' && topicFilter.charAt(filterPos) == '#') {
+            return true;
+        }
         if (topicFilter.length() - filterPos > 1 && topicFilter.substring(filterPos, filterPos + 2).equals("/#")) {
           if ((topicFilter.length() - topicName.length()) == 2
               && topicFilter.substring(topicFilter.length() - 2, topicFilter.length()).equals("/#")) {
