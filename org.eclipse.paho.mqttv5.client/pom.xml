@@ -162,7 +162,7 @@ aven build itself.-->
             </plugins>
         </pluginManagement>
     </build>
-    <version>1.2.6</version>
+    <version>1.2.6.kserin</version>
 </project>
 
 
